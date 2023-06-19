@@ -9,10 +9,8 @@ def Wrapper(children):
   return html.div(
     { "style": 
       {
-        "font-family": "system-ui",
         "display": "grid", 
-        "place-content": 
-        "center", 
+        "place-content": "center", 
         "gap": "18px"
       },
       "class": "page-wrapper"
