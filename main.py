@@ -1,5 +1,5 @@
-from reactpy import component, html, hooks
-from reactpy.backend.fastapi import configure
+from reactpy import component, html, hooks, backend
+from reactpy.backend.fastapi import configure, Options
 from fastapi import FastAPI
 from uuid import uuid4 as uuid
 
@@ -14,7 +14,8 @@ def Wrapper(children):
         "place-content": 
         "center", 
         "gap": "18px"
-      }
+      },
+      "class": "page-wrapper"
     },
     children
   )
@@ -29,14 +30,14 @@ def Item(id, title, done, delete_one, done_task):
     delete_one(id)
 
   if done:
-    style = { "color": "green", "text-decoration": "line-through" }
+    style = { "text-decoration": "line-through" }
   else: 
-    style = { "color": "black" } 
+    style = { "text-decoration": "none" } 
 
   return html.li(
     { "key": id },
     html.span({ "on_click": handle_click, "style": style }, title),
-    html.strong({ "on_click": handle_remove, "style": { "color": "red", "margin-left": "8px" } }, "x")
+    html.code({ "on_click": handle_remove, "style": { "color": "red", "margin-left": "12px" } }, "x")
   )
 
 @component
@@ -50,18 +51,33 @@ def ListOfTasks(tasks, delete_one, done_task):
 @component
 def AddTask(tasks, set_tasks):
   value, set_value = hooks.use_state("")
+  is_empty_task, set_is_empty_task = hooks.use_state(False)
   def handle_change(event):
     set_value(event["target"]["value"])
 
   def handle_click(event):
     event["defaultPrevented"] = True
-    set_tasks([*tasks, {"id": uuid().hex, "title": value, "done": False }])
-    set_value("")
+    if value != "":
+      set_tasks([*tasks, {"id": uuid().hex, "title": value, "done": False }])
+      set_value("")
+      set_is_empty_task(False)
+    else:
+      set_is_empty_task(True)
+      return
+  
+  if is_empty_task:
+    display = { "display": "block", "font-size": "14px" }
+  else:
+    display = { "display": "none" }
   
   return html.div(
-    { "style": { "display": "flex", "gap": "8px" } },
-    html.input({ "placeholder": "Introduzca la task", "on_change": handle_change, "value": value }),
-    html.button({ "on_click": handle_click }, "Agregar")
+    { "style": { "display": "flex", "flex-direction": "column" ,"gap": "12px" } },
+    html.div(
+      { "style": { "display": "flex", "gap": "8px" } },
+      html.input({ "placeholder": "Introduzca la task", "on_change": handle_change, "value": value }),
+      html.button({ "on_click": handle_click }, "Agregar")
+    ),
+    html.code({ "style": display }, "Debe ingresar un texto para agregar a la lista")
   )
 
 @component
@@ -89,4 +105,5 @@ def Home():
   ])
 
 app = FastAPI()
-configure(app, Home)
+
+configure(app, Home, Options(head=({'tagName': 'title', 'children': ['TODO App']}, {'tagName': 'link', 'attributes': {'rel': 'icon', 'href': '/_reactpy/assets/reactpy-logo.ico', 'type': 'image/x-icon'}}, {'tagName': 'link', 'attributes': {'rel': 'stylesheet', 'href': 'https://cdn.simplecss.org/simple.min.css'}}), url_prefix='', cors=False))
